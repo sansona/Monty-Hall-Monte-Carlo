@@ -63,18 +63,6 @@ def RunSimulation(num_simulations, K=1, M=3, N=1):
 # -----------------------------------------------------------------------------
 
 
-def Plot(switch_list, no_switch_list):
-    # generates line plot from lists of success percentages
-    plt.plot(switch_list, label='Switch')
-    plt.plot(no_switch_list, label='No switch')
-    plt.xlabel('number iterations', fontsize=14)
-    plt.ylabel('Win percent', fontsize=14)
-    plt.legend(bbox_to_anchor=(1, 1))
-    plt.show()
-
-# -----------------------------------------------------------------------------
-
-
 def CalculateStatistics(switch_list, no_switch_list):
     '''
     determines if is a good idea to switch or not by comparing average 
@@ -90,23 +78,75 @@ def CalculateStatistics(switch_list, no_switch_list):
     # if good idea to switch, two avgs converge to same val
     converges = False
     threshold = 1
-    if abs(avg_switch - avg_noswitch) <= 1:
+    if abs(avg_switch - avg_noswitch) <= 0.01:
         converges = True
 
     return avg_switch, avg_noswitch, converges
 
 
 # -----------------------------------------------------------------------------
-def MonteCarlo(K_range=(1, 100), M_range=(1, 100), N_range=(1, 100)):
+def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
     '''
     run MonteCarlo w/ varying K, M, & N ranges to see pattern for when switching makes sense
     '''
-    return "Work in progress"
+    count = 0
+    tested_settings = {}
+    conv_settings = []
+    while count < n_iter:
+        # choose random config that's legal
+        K = random.randint(1, K_max)
+        M = random.randint(1, M_max)
+        N = random.randint(1, N_max)
+
+        # (TODO): infinite loop here
+        if (K, M, N) in list(tested_settings.keys()):
+            print('In')
+            continue
+
+        if M - N - K >= 1:
+            # run simulation of random config. Saves all results and
+            # all convergent configs
+            switch, no_switch = RunSimulation(100, K, M, N)
+            switch_avg, no_switch_avg, conv = CalculateStatistics(
+                switch, no_switch)
+
+            tested_settings[(K, M, N)] = [switch_avg, no_switch_avg]
+
+            if conv and (K, M, N) not in conv_settings:
+                conv_settings.append((K, M, N))
+            count += 1
+
+    return tested_settings, conv_settings
 # -----------------------------------------------------------------------------
 
 
-'''
-switch, noswitch = RunSimulation(10000, 1, 3, 1)
-Plot(switch, noswitch)
-CalculateStatistics(switch, noswitch)
-'''
+def PlotSingle(switch_list, no_switch_list):
+    '''
+    generates line plot from lists of success percentages. Used to visualize 
+    converge of one configuration i.e one (K, M, N) setting
+    '''
+    plt.plot(switch_list, label='Switch')
+    plt.plot(no_switch_list, label='No switch')
+    plt.xlabel('number iterations', fontsize=14)
+    plt.ylabel('Win percent', fontsize=14)
+    plt.legend(bbox_to_anchor=(1, 1))
+    plt.show()
+
+# -----------------------------------------------------------------------------
+
+
+def PlotMonteCarlo(test_results, conv_results):
+    '''
+    should take in dict of tested settings and list of settings that converged and plot them
+    '''
+    print('WIP')
+
+# -----------------------------------------------------------------------------
+
+
+a, b = MonteCarlo(100, 1, 100, 1)
+print(a)
+print(len(a))
+print('   ')
+print(b)
+print(len(b))
