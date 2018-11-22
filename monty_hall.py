@@ -65,7 +65,7 @@ def RunSimulation(num_simulations, K=1, M=3, N=1):
 # -----------------------------------------------------------------------------
 
 
-def CalculateStatistics(switch_list, no_switch_list):
+def CalculateConvergence(switch_list, no_switch_list):
     '''
     determines if is a good idea to switch or not by comparing average 
     success rates for switching vs. not switching
@@ -90,8 +90,10 @@ def CalculateStatistics(switch_list, no_switch_list):
 
 def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
     '''
-    run MonteCarlo w/ varying K, M, & N ranges to see pattern for when 
-    switching makes sense
+    [-m] optional arg
+
+    run MonteCarlo w/ varying K, M, & N ranges. Returns lists of all settings 
+    tested and all convergent configurations
     '''
     count = 0
     tested_settings = {}
@@ -102,7 +104,7 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
         M = random.randint(1, M_max)
         N = random.randint(1, N_max)
 
-        # (TODO): infinite loop here. Should check if (K,M,N) already tested
+        # prevents tested duplicate settings
         if (K, M, N) in list(tested_settings.keys()):
             break
 
@@ -110,7 +112,7 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
             # run simulation of random config. Saves all results and
             # all convergent configs
             switch, no_switch = RunSimulation(100, K, M, N)
-            switch_avg, no_switch_avg, conv = CalculateStatistics(
+            switch_avg, no_switch_avg, conv = CalculateConvergence(
                 switch, no_switch)
 
             tested_settings[(K, M, N)] = [switch_avg, no_switch_avg]
@@ -126,8 +128,10 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
 
 def GeneratePlot(switch_list, no_switch_list):
     '''
+    [-p] optional arg
+
     generates line plot from lists of success percentages. Used to visualize 
-    convergence of one configuration i.e one (K, M, N) setting
+    convergence of one configuration i.e one (K, M, N) setting. 
     '''
     plt.plot(switch_list, label='Switch')
     plt.plot(no_switch_list, label='No switch')
@@ -141,7 +145,7 @@ def GeneratePlot(switch_list, no_switch_list):
 
 def PlotMonteCarlo(conv_results):
     '''
-    should take in list of settings that converged and plot them.
+    Take in list of settings that converged and generate plot
     '''
     conv_switch_list = []
     conv_noswitch_list = []
@@ -156,7 +160,6 @@ def PlotMonteCarlo(conv_results):
             plt.plot(switch_stats, label='Switch')
             #plt.plot(noswitch_stats, label='No switch')
 
-    # (TODO): figure out how to make multiple subplots as opposed to a single
     plt.xlabel('number iterations', fontsize=14)
     plt.ylabel('Win percent', fontsize=14)
     plt.legend(bbox_to_anchor=(1, 1))
@@ -166,15 +169,37 @@ def PlotMonteCarlo(conv_results):
 
 
 if __name__ == '__main__':
+    '''
+    Usage: ./monty_hall.py [n winning doors] [n total doors] [n revealed doors]
+
+    Optional args: [-m run Monte Carlo simulations] [-p Generate plot]
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument('K', help='number winning doors', type=int)
     parser.add_argument('M', help='number total doors', type=int)
     parser.add_argument('N', help='number doors revealed', type=int)
     parser.add_argument('n_iter', help='number iterations to run', type=int)
+
+    parser.add_argument('-m', '--monte_carlo',
+                        help='run monte carlo. Prints out list of convergences',
+                        action='store_true')
+    parser.add_argument('-p', '--plot',
+                        help='Generates plot of success vs. n_iter',
+                        action='store_true')
+
     args = parser.parse_args()
 
-    switch, noswitch = RunSimulation(args.n_iter, args.K, args.M, args.N)
-    avg_switch, avg_noswitch, conv = CalculateStatistics(switch, noswitch)
-    print('Switch win percent: %s' % avg_switch)
-    print('No switch win percent: %s' % avg_noswitch)
-    print('Converges?:  %s' % conv)
+    if args.monte_carlo:
+        no_conv, conv_list = MonteCarlo(args.n_iter, args.K, args.M, args.N)
+        print('Convergent (K,M,N) configurations:')
+        for config in conv_list:
+            print(config)
+        print('Total convergent configs: %s' % len(conv_list))
+    else:
+        switch, noswitch = RunSimulation(args.n_iter, args.K, args.M, args.N)
+        avg_switch, avg_noswitch, conv = CalculateConvergence(switch, noswitch)
+        print('Switch win percent: %s' % avg_switch)
+        print('No switch win percent: %s' % avg_noswitch)
+        print('Converges?:  %s' % conv)
+        if args.plot:
+            GeneratePlot(switch, noswitch)
