@@ -39,7 +39,7 @@ def MontyHall(k, m, n, switch=True):
 
 def RunSimulation(num_simulations, K=1, M=3, N=1):
     '''
-    runs simple Monte Carlo on num_simulations iterations of MonteHall. 
+    runs simple Monte Carlo on num_simulations iterations of MontyHall. 
     Returns two lists of success rate over iters for switching & no switching
     '''
     switch_successes = 0
@@ -83,8 +83,9 @@ def CalculateStatistics(switch_list, no_switch_list):
 
     return avg_switch, avg_noswitch, converges
 
-
 # -----------------------------------------------------------------------------
+
+
 def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
     '''
     run MonteCarlo w/ varying K, M, & N ranges to see pattern for when switching makes sense
@@ -98,11 +99,12 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
         M = random.randint(1, M_max)
         N = random.randint(1, N_max)
 
-        # (TODO): infinite loop here
+        # (TODO): infinite loop here. Should check if (K,M,N) already tested
+        '''
         if (K, M, N) in list(tested_settings.keys()):
             print('In')
             continue
-
+        '''
         if M - N - K >= 1:
             # run simulation of random config. Saves all results and
             # all convergent configs
@@ -117,13 +119,14 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
             count += 1
 
     return tested_settings, conv_settings
+
 # -----------------------------------------------------------------------------
 
 
-def PlotSingle(switch_list, no_switch_list):
+def GenerateSinglePlot(switch_list, no_switch_list):
     '''
     generates line plot from lists of success percentages. Used to visualize 
-    converge of one configuration i.e one (K, M, N) setting
+    convergence of one configuration i.e one (K, M, N) setting
     '''
     plt.plot(switch_list, label='Switch')
     plt.plot(no_switch_list, label='No switch')
@@ -135,18 +138,31 @@ def PlotSingle(switch_list, no_switch_list):
 # -----------------------------------------------------------------------------
 
 
-def PlotMonteCarlo(test_results, conv_results):
+def PlotMonteCarlo(conv_results):
     '''
     should take in dict of tested settings and list of settings that converged and plot them
     '''
-    print('WIP')
+    conv_switch_list = []
+    conv_noswitch_list = []
+    for config in conv_results:
+        conv_switch, conv_noswitch = RunSimulation(
+            100, config[0], config[1], config[2])
+        conv_switch_list.append(conv_switch)
+        conv_noswitch_list.append(conv_noswitch)
+
+    for switch_stats in conv_switch_list:
+        for noswitch_stats in conv_noswitch_list:
+            plt.plot(switch_stats, label='Switch')
+            plt.plot(noswitch_stats, label='No switch')
+
+    # (TODO): figure out how to make multiple subplots as opposed to a single
+    plt.xlabel('number iterations', fontsize=14)
+    plt.ylabel('Win percent', fontsize=14)
+    plt.legend(bbox_to_anchor=(1, 1))
+    plt.show()
 
 # -----------------------------------------------------------------------------
 
 
 a, b = MonteCarlo(100, 1, 100, 1)
-print(a)
-print(len(a))
-print('   ')
-print(b)
-print(len(b))
+PlotMonteCarlo(b)
