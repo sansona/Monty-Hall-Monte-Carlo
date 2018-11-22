@@ -1,5 +1,7 @@
 #!/usr/bin/python3
+import sys
 import random
+import argparse
 
 import matplotlib.pyplot as plt
 
@@ -77,8 +79,8 @@ def CalculateStatistics(switch_list, no_switch_list):
 
     # if good idea to switch, two avgs converge to same val
     converges = False
-    threshold = 1
-    if abs(avg_switch - avg_noswitch) <= 0.01:
+    threshold = 0.5
+    if abs(avg_switch - avg_noswitch)*100 <= threshold:
         converges = True
 
     return avg_switch, avg_noswitch, converges
@@ -88,7 +90,8 @@ def CalculateStatistics(switch_list, no_switch_list):
 
 def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
     '''
-    run MonteCarlo w/ varying K, M, & N ranges to see pattern for when switching makes sense
+    run MonteCarlo w/ varying K, M, & N ranges to see pattern for when 
+    switching makes sense
     '''
     count = 0
     tested_settings = {}
@@ -100,11 +103,9 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
         N = random.randint(1, N_max)
 
         # (TODO): infinite loop here. Should check if (K,M,N) already tested
-        '''
         if (K, M, N) in list(tested_settings.keys()):
-            print('In')
-            continue
-        '''
+            break
+
         if M - N - K >= 1:
             # run simulation of random config. Saves all results and
             # all convergent configs
@@ -123,7 +124,7 @@ def MonteCarlo(n_iter, K_max=10, M_max=10, N_max=10):
 # -----------------------------------------------------------------------------
 
 
-def GenerateSinglePlot(switch_list, no_switch_list):
+def GeneratePlot(switch_list, no_switch_list):
     '''
     generates line plot from lists of success percentages. Used to visualize 
     convergence of one configuration i.e one (K, M, N) setting
@@ -140,7 +141,7 @@ def GenerateSinglePlot(switch_list, no_switch_list):
 
 def PlotMonteCarlo(conv_results):
     '''
-    should take in dict of tested settings and list of settings that converged and plot them
+    should take in list of settings that converged and plot them.
     '''
     conv_switch_list = []
     conv_noswitch_list = []
@@ -153,7 +154,7 @@ def PlotMonteCarlo(conv_results):
     for switch_stats in conv_switch_list:
         for noswitch_stats in conv_noswitch_list:
             plt.plot(switch_stats, label='Switch')
-            plt.plot(noswitch_stats, label='No switch')
+            #plt.plot(noswitch_stats, label='No switch')
 
     # (TODO): figure out how to make multiple subplots as opposed to a single
     plt.xlabel('number iterations', fontsize=14)
@@ -164,5 +165,16 @@ def PlotMonteCarlo(conv_results):
 # -----------------------------------------------------------------------------
 
 
-a, b = MonteCarlo(100, 1, 100, 1)
-PlotMonteCarlo(b)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('K', help='number winning doors', type=int)
+    parser.add_argument('M', help='number total doors', type=int)
+    parser.add_argument('N', help='number doors revealed', type=int)
+    parser.add_argument('n_iter', help='number iterations to run', type=int)
+    args = parser.parse_args()
+
+    switch, noswitch = RunSimulation(args.n_iter, args.K, args.M, args.N)
+    avg_switch, avg_noswitch, conv = CalculateStatistics(switch, noswitch)
+    print('Switch win percent: %s' % avg_switch)
+    print('No switch win percent: %s' % avg_noswitch)
+    print('Converges?:  %s' % conv)
